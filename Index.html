@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fila Mugen</title>
+
+<style>
+body{
+    background:#121212;
+    color:white;
+    font-family:Arial,sans-serif;
+    text-align:center;
+    padding:20px;
+}
+
+input{
+    padding:10px;
+    border:none;
+    border-radius:8px;
+}
+
+button{
+    padding:10px;
+    margin:5px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.entrar{background:#00c853;color:white;}
+.proximo{background:#ff9800;color:white;}
+.sair{background:#f44336;color:white;}
+
+.box{
+    background:#1f1f1f;
+    padding:15px;
+    border-radius:10px;
+    margin-top:15px;
+}
+
+ol{
+    text-align:left;
+    display:inline-block;
+}
+</style>
+</head>
+<body>
+
+<h1>🎮 FILA MUGEN 🎮</h1>
+
+<input id="nome" placeholder="Seu nome">
+<button class="entrar" onclick="entrarFila()">Entrar</button>
+
+<div class="box">
+<h2>👑 Jogando Agora</h2>
+<p id="atual">Carregando...</p>
+</div>
+
+<div class="box">
+<h2>⏳ Fila</h2>
+<ol id="fila"></ol>
+</div>
+
+<button class="proximo" onclick="proximoJogador()">Próximo</button>
+<button class="sair" onclick="sairFila()">Sair da fila</button>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getFirestore,
+doc,
+getDoc,
+updateDoc,
+onSnapshot
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyChE_Y6qQagnmCv-lkyMxKYqM7ZIV7lH8k",
+  authDomain: "fila-mugen.firebaseapp.com",
+  projectId: "fila-mugen",
+  storageBucket: "fila-mugen.firebasestorage.app",
+  messagingSenderId: "605964168640",
+  appId: "1:605964168640:web:a51e82a0cd2dea7cc42c25"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const filaRef = doc(db,"fila","estado");
+
+async function entrarFila(){
+
+    const nome =
+    document.getElementById("nome").value.trim();
+
+    if(!nome) return;
+
+    const snap = await getDoc(filaRef);
+
+    let dados = snap.data();
+
+    let jogadores = dados.jogadores || [];
+
+    if(!jogadores.includes(nome)){
+        jogadores.push(nome);
+    }
+
+    await updateDoc(filaRef,{
+        jogadores:jogadores
+    });
+
+    document.getElementById("nome").value="";
+}
+
+async function sairFila(){
+
+    const nome =
+    document.getElementById("nome").value.trim();
+
+    if(!nome) return;
+
+    const snap = await getDoc(filaRef);
+
+    let jogadores =
+    snap.data().jogadores || [];
+
+    jogadores =
+    jogadores.filter(j=>j!==nome);
+
+    await updateDoc(filaRef,{
+        jogadores:jogadores
+    });
+}
+
+async function proximoJogador(){
+
+    const snap = await getDoc(filaRef);
+
+    let jogadores =
+    snap.data().jogadores || [];
+
+    if(jogadores.length>1){
+
+        let primeiro =
+        jogadores.shift();
+
+        jogadores.push(primeiro);
+
+        await updateDoc(filaRef,{
+            jogadores:jogadores
+        });
+    }
+}
+
+onSnapshot(filaRef,(snap)=>{
+
+    const dados = snap.data();
+
+    const jogadores =
+    dados.jogadores || [];
+
+    document.getElementById("atual").textContent =
+    jogadores.length
+    ? jogadores[0]
+    : "Ninguém";
+
+    const lista =
+    document.getElementById("fila");
+
+    lista.innerHTML="";
+
+    jogadores.slice(1).forEach(nome=>{
+
+        const li =
+        document.createElement("li");
+
+        li.textContent=nome;
+
+        lista.appendChild(li);
+    });
+
+});
+
+window.entrarFila = entrarFila;
+window.sairFila = sairFila;
+window.proximoJogador = proximoJogador;
+
+</script>
+
+</body>
+</html>
